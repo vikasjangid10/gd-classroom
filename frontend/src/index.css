@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    /* A faint blue wash rather than pure white, so white cards read as raised. */
+    @apply bg-[#F4F7FB] text-ink-100 font-sans antialiased;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-signal ring-offset-2 ring-offset-ink-900;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink-600 rounded-full border-2 border-solid border-transparent bg-clip-content;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-ink-600 bg-ink-800 shadow-[0_1px_2px_rgba(14,26,44,0.04)];
+  }
+  .label {
+    @apply font-mono text-[10px] uppercase tracking-[0.14em] text-ink-400;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm
+           font-semibold transition disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-signal text-white hover:bg-signal-deep;
+  }
+  .btn-ghost {
+    @apply btn border border-ink-600 bg-ink-800 text-ink-200 hover:border-signal hover:text-signal;
+  }
+  .btn-danger {
+    @apply btn border border-red-200 text-red-600 hover:bg-red-50;
+  }
+  .input {
+    @apply w-full rounded-lg border border-ink-600 bg-ink-800 px-3 py-2 text-sm
+           text-ink-100 placeholder:text-ink-400 focus:border-signal focus:outline-none;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5
+           font-mono text-[10px] uppercase tracking-wider;
+  }
+}

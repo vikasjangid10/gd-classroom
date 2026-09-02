@@ -1,0 +1,69 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gd_password}
+      POSTGRES_DB: ${POSTGRES_DB:-gd_classroom}
+    ports:
+      # Host-side port is deliberately non-default so it never collides with a
+      # PostgreSQL already running on the developer's machine.
+      - "55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gd} -d ${POSTGRES_DB:-gd_classroom}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: db
+      TTS_BACKEND: ${TTS_BACKEND:-auto}
+    ports:
+      - "0.0.0.0:8000:8000"
+      # WebRTC media (UDP) — must be published for browsers to reach aiortc
+      - "40000-40020:40000-40020/udp"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      # The console mail transport writes here. A named volume rather than a bind mount
+      # so the browser smoke test can mount the same "inbox" and read the join links.
+      - outbox:/tmp/gd-outbox
+      # The Piper voice model. A volume so a ~60 MB download survives rebuilds and is
+      # not shadowed by the ./backend bind mount above.
+      - piper:/app/.piper
+      # The LLM chain's quota ledger. A volume because counters that reset on every
+      # container restart are worse than none: a spent tier would be re-probed, and
+      # pay a full timeout to rediscover it, after every deploy.
+      - llmstate:/app/.llm
+    command: ["/app/entrypoint.sh"]
+
+  web:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      # 0.0.0.0 rather than 127.0.0.1: participants open their invitation link from
+      # their own phone or laptop, so the dev server has to answer on the LAN.
+      - "0.0.0.0:5173:5173"
+    depends_on:
+      - api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
+  outbox:
+  piper:
+  llmstate:
